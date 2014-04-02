@@ -1,6 +1,15 @@
+#ifdef _WIN32
+// for math constant M_PI on Windows, you must define before you include math.h
+#define _USE_MATH_DEFINES
+
+#define snprintf _snprintf
+#include <stdlib.h> // for EXIT_SUCCESS macro
+#endif
+
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
+
 
 #if defined (__APPLE__) || defined (MACOSX)
 #  include <GLUT/glut.h>
