@@ -2,7 +2,7 @@
 #define IMAGE_H_
 
 typedef unsigned short WORD;
-typedef unsigned int   DWORD;
+typedef unsigned long  DWORD;
 typedef long           LONG;
 
 #if defined(_MSC_VER)
@@ -17,6 +17,9 @@ typedef long           LONG;
 		declaration
 #endif
 
+
+#ifndef _WIN32
+
 /**
  * For information on The BITMAPFILEHEADER structure, see:
  * http://msdn.microsoft.com/en-us/library/windows/desktop/dd183374(v=vs.85).aspx
@@ -28,7 +31,6 @@ typedef PACKED_STRUCT(tagBITMAPFILEHEADER {
 	WORD  bfReserved2;
 	DWORD bfOffBits;
 }) BITMAPFILEHEADER, *PBITMAPFILEHEADER;
-
 
 /**
  * For information on The BITMAPINFOHEADER structure, see:
@@ -47,6 +49,8 @@ typedef PACKED_STRUCT( tagBITMAPINFOHEADER {
 	DWORD biClrUsed;
 	DWORD biClrImportant;
 }) BITMAPINFOHEADER, *PBITMAPINFOHEADER;
+
+#endif /* _WIN32 */
 
 /**
  * return true if snapshot successfully, otherwise false.

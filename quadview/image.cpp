@@ -5,12 +5,23 @@
 #include <stdlib.h>
 #include <string.h> // for strrchr
 
-#include <jpeglib.h> // libjpeg
-#include <tiffio.h>  // libtiff
-#include <png.h>     // libpng
+#include "jpeglib.h" // libjpeg
+#ifdef HAVE_TIFF
+#include "tiffio.h"  // libtiff
+#endif
+#ifdef HAVE_PNG
+#include "png.h"   // libpng
+#endif
 
 #include <GL/gl.h>   // for glPixelStore & glReadPixels
+#ifndef GL_BGR
+#define GL_BGR GL_BGR_EXT
+#endif
 
+#ifdef _WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#endif
 bool snapshot_bmp(int width, int height, const char* path)
 {
 	const size_t pitch=(width*3+3)&~3; // DWORD aligned line
