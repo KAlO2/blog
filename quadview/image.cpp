@@ -188,6 +188,100 @@ bool snapshot_tiff(int width, int height, const char* path)
 }
 #endif /* HAVE_TIFF */
 
+#ifdef HAVE_PNG
+bool snapshot_png(int width, int height, const char* path)
+{
+	FILE *file = fopen(path, "wb");
+	if(!file)
+	{
+		printf("can't open file %s for writing\n", path);
+		return false;
+	}
+
+	png_struct* png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+		NULL/*user_error_ptr*/, NULL/*user_error_fn*/, NULL/*user_warning_fn*/);
+	if(!png_ptr)
+	{
+		printf("error: png_create_read_struct returned 0.\n");
+		fclose(file);
+		return false;
+	}
+	
+	png_info* info_ptr = png_create_info_struct(png_ptr);
+	if(!info_ptr || setjmp(png_jmpbuf(png_ptr)))
+	{
+		printf("error: png_create_read_struct returned 0 or set error handling failed.\n");
+		png_destroy_write_struct(&png_ptr, (info_ptr==NULL)?NULL:&info_ptr);
+		fclose(file);
+		return false;
+	}
+    
+    png_init_io(png_ptr, file);
+    
+	/* Set the image information here. Width and height are up to 2^31,
+	 * bit_depth is one of 1, 2, 4, 8, or 16, but valid values also depend on
+	 * the color_type selected. color_type is one of PNG_COLOR_TYPE_GRAY,
+	 * PNG_COLOR_TYPE_GRAY_ALPHA, PNG_COLOR_TYPE_PALETTE, PNG_COLOR_TYPE_RGB,
+	 * or PNG_COLOR_TYPE_RGB_ALPHA.  interlace is either PNG_INTERLACE_NONE or
+	 * PNG_INTERLACE_ADAM7, and the compression_type and filter_type MUST
+	 * currently be PNG_COMPRESSION_TYPE_BASE and PNG_FILTER_TYPE_BASE. REQUIRED
+	 */
+	const int bit_depth = 8;
+	png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, PNG_COLOR_TYPE_RGB,
+		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+	
+	/* Optional significant bit (sBIT) chunk */
+	png_color_8 sig_bit;
+	sig_bit.red = bit_depth;
+	sig_bit.green = bit_depth;
+	sig_bit.blue = bit_depth;
+	sig_bit.alpha = 0; // no alpha channel
+	png_set_sBIT(png_ptr, info_ptr, &sig_bit);
+
+	// Write the file header information.
+	png_write_info(png_ptr, info_ptr);
+	
+	if((png_uint_32)height > PNG_UINT_32_MAX/(sizeof(png_byte*)))
+		png_error(png_ptr, "Image is too tall to process in memory");
+	
+	png_byte** row_ptrs = (png_byte**)malloc(height * sizeof(png_byte*));
+	if(!row_ptrs)
+		printf("malloc failed for row_ptrs.\n");
+	else
+	{
+		const size_t line = sizeof(GLubyte) * width * 3; // RGB components
+		GLubyte *data = (GLubyte*)malloc(line * height);
+
+		if(data)
+		{
+			/* Make sure the rows are packed as tight as possible (no row padding),
+			 * set the pack alignment to 1.
+			 */
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+			/* Set the individual row_ptrs to point at the correct offsets of image 
+			 * data, note that it's upside down to keep consistent with the screen
+			 * coordinate system.
+			 */
+			for(int row = 0; row < height; ++row)
+				row_ptrs[row] = (png_byte*)data + line * row;
+
+			png_write_image(png_ptr, row_ptrs);
+			png_write_end(png_ptr, info_ptr);
+
+			free(data);
+		}
+	}
+
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	fclose(file);
+	free(row_ptrs);
+	
+	return(row_ptrs != NULL);
+}
+#endif
+
 bool snapshot(int width, int height, const char* path)
 {
 	const char* pos=strrchr(path, '.');
@@ -206,6 +300,10 @@ bool snapshot(int width, int height, const char* path)
 	else if(!strcasecmp(pos, "tiff") || !strcasecmp(pos, "tif"))
 		return snapshot_tiff(width, height, path);
 #endif /* HAVE_TIFF */
+#ifdef HAVE_PNG
+	else if(!strcasecmp(pos, "png"))
+		return snapshot_png(width, height, path);
+#endif /* HAVE_PNG */
 	else
 	{
 		fprintf(stderr, "unimplemented picture format [%s].\n", pos);

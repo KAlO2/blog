@@ -70,6 +70,18 @@ bool snapshot_jpg(int width, int height, const char *path, int quality=85);
 bool snapshot_tiff(int width, int height, const char* path);
 #endif
 
+#ifdef HAVE_PNG
+/**
+ * @brief Save image data to disk, using cstdio, libpng.
+ * 
+ * @param path The PNG file to be saved
+ * @param width Width of PNG file
+ * @param height Height of PNG file
+ * @return true if snapshot successfully, otherwise false.
+ */
+bool snapshot_png(int width, int height, const char* path);
+#endif
+
 /**
  * Call some snapshot_* function above according the given path's suffix.
  * return true if snapshot successfully, otherwise false.
