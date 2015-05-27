@@ -7,87 +7,85 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <stdint.h>
 #include <assert.h>
 #include <time.h>
 
-typedef unsigned char uchar;
-typedef unsigned int  uint;
-
-uint iterated_popcnt(uint n)
+uint32_t iterated_popcnt(uint32_t n)
 {
-	uint count=0;
-	for(;n;n>>=1)
-		count+=n&1u;
+	uint32_t count = 0;
+	for(; n; n >>= 1)
+		count += n&1u;
 	return count;
 }
 
-uint sparse_popcnt(uint n)
+uint32_t sparse_popcnt(uint32_t n)
 {
-	uint count=0;
+	uint32_t count = 0;
 	while(n)
 	{
 		++count;
-		n&=(n-1);
+		n &= n-1;
 	}
 	return count;
 }
 
-uint dense_popcnt(uint n)
+uint32_t dense_popcnt(uint32_t n)
 {
-	uint count=CHAR_BIT*sizeof(uint);
-	n^=(uint)-1;
+	uint32_t count = CHAR_BIT * sizeof(uint32_t);
+	n ^= static_cast<uint32_t>(-1);
 	while(n)
 	{
 		--count;
-		n&=(n-1);
+		n &= n-1;
 	}
 	return count;
 }
 
 #ifdef USE_MACRO
 
-uint lookup_popcnt(uint n)
+uint32_t lookup_popcnt(uint32_t n)
 {
 # define BIT2(n)      n,       n+1,       n+1,       n+2
 # define BIT4(n) BIT2(n), BIT2(n+1), BIT2(n+1), BIT2(n+2)
 # define BIT6(n) BIT4(n), BIT4(n+1), BIT4(n+1), BIT4(n+2)
 # define BIT8(n) BIT6(n), BIT6(n+1), BIT6(n+1), BIT6(n+2)
 
-	assert(CHAR_BIT==8);
-	static const uchar TABLE[256]={BIT8(0)};
+	assert(CHAR_BIT == 8);
+	static const uint8_t TABLE[256] = { BIT8(0) };
 
 	return 
-		TABLE[(n    ) & UCHAR_MAX]+
-		TABLE[(n>> 8) & UCHAR_MAX]+
-		TABLE[(n>>16) & UCHAR_MAX]+
+		TABLE[(n    ) & UCHAR_MAX] +
+		TABLE[(n>> 8) & UCHAR_MAX] +
+		TABLE[(n>>16) & UCHAR_MAX] +
 		TABLE[(n>>24) & UCHAR_MAX];
 }
 
 #else
 
-const size_t TBL_LEN=1u<<CHAR_BIT;
-static uchar TABLE[TBL_LEN]={0};
+const size_t TBL_LEN = 1u << CHAR_BIT;
+static uint8_t TABLE[TBL_LEN] = {0};
 
-uint lookup_popcnt(uint n)
+uint32_t lookup_popcnt(uint32_t n)
 {
-	uchar *p=(uchar*)&n;
-	return TABLE[p[0]]+TABLE[p[1]]+TABLE[p[2]]+TABLE[p[3]];
+	uint8_t *p = reinterpret_cast<uint8_t*>(&n);
+	return TABLE[p[0]] + TABLE[p[1]] + TABLE[p[2]] + TABLE[p[3]];
 }
 
 #endif /* USE_MACRO */
 
-#define POW2(c)    (1u<<(c))
-#define MASK(c)    (UINT_MAX/(POW2(POW2(c))+1u))
-#define COUNT(x,c) (((x)&MASK(c)) + (((x)>>POW2(c))&MASK(c)))
+#define POW2(c)    (1u << (c))
+#define MASK(c)    (UINT_MAX / (POW2(POW2(c)) + 1u))
+#define COUNT(x, c) (((x) & MASK(c)) + (((x)>>POW2(c)) & MASK(c)))
 
-uint parallel_popcnt(uint n)
+uint32_t parallel_popcnt(uint32_t n)
 {
-	n=COUNT(n,0);
-	n=COUNT(n,1);
-	n=COUNT(n,2);
-	n=COUNT(n,3);
-	n=COUNT(n,4);
-/*  n=COUNT(n,5);  for 64-bit integers */
+	n = COUNT(n, 0);
+	n = COUNT(n, 1);
+	n = COUNT(n, 2);
+	n = COUNT(n, 3);
+	n = COUNT(n, 4);
+//  n = COUNT(n, 5);  for 64-bit integers
 	return n;
 }
 
@@ -95,15 +93,15 @@ uint parallel_popcnt(uint n)
 #define MASK_00110011 (((unsigned int)(-1))/5)
 #define MASK_00001111 (((unsigned int)(-1))/17)
 
-uint nifty_popcnt(uint n)
+uint32_t nifty_popcnt(uint32_t n)
 {
-	n = (n & MASK_01010101) + ((n>>1) & MASK_01010101) ;
-	n = (n & MASK_00110011) + ((n>>2) & MASK_00110011) ;
-	n = (n & MASK_00001111) + ((n>>4) & MASK_00001111) ;
+	n = (n & MASK_01010101) + ((n>>1) & MASK_01010101);
+	n = (n & MASK_00110011) + ((n>>2) & MASK_00110011);
+	n = (n & MASK_00001111) + ((n>>4) & MASK_00001111);
 	return n%255 ;
 }
 
-uint hacker_popcnt(uint n)
+uint32_t hacker_popcnt(uint32_t n)
 {
 	n -= (n>>1) & 0x55555555;
 	n  = (n & 0x33333333) + ((n>>2) & 0x33333333);
@@ -140,13 +138,13 @@ uint hacker_popcnt(uint n)
   This is HACKMEM 169, as used in X11 sources.
   Source: MIT AI Lab memo, late 1970's.
 */
-uint hakmem_popcnt(uint n)
+uint32_t hakmem_popcnt(uint32_t n)
 {
-	uint tmp = n - ((n>>1)&033333333333) - ((n>>2)&011111111111);
+	uint32_t tmp = n - ((n>>1)&033333333333) - ((n>>2)&011111111111);
 	return ((tmp+(tmp>>3)) & 030707070707) % 63;
 }
 
-uint assembly_popcnt(uint n)
+uint32_t assembly_popcnt(uint32_t n)
 {
 /*
 	asm("popcnt %0,%%eax"::"r"(n)); // Intel style
@@ -173,7 +171,7 @@ uint assembly_popcnt(uint n)
 	return result;
 
 #else
-# error "which assembly style does your compiler support, Intel or AT&T?"
+#	error "which assembly style does your compiler support, Intel or AT&T?"
 #endif
 }
 
@@ -181,19 +179,19 @@ int main(void)
 {
 #if !defined(USE_MACRO)
 	// generate the table algorithmically
-	for(size_t i=1; i<TBL_LEN; ++i)
-		TABLE[i]=TABLE[i>>1]+(i&1);
+	for(size_t i = 1; i < TBL_LEN; ++i)
+		TABLE[i] = TABLE[i>>1] + (i&1);
 #endif
 
-	typedef uint (*FUNC_POPCNT)(uint);
+	typedef uint32_t (*FUNC_POPCNT)(uint32_t);
 
 	const struct Pair
 	{
 		FUNC_POPCNT pfunc;
-		const char  *name;
-	}METHOD[]=
+		const char* name;
+	} METHOD[] =
 	{
-#define ELEMENT(n) {(n),#n}
+#define ELEMENT(n) {(n), #n}
 		ELEMENT(iterated_popcnt),
 		ELEMENT(  sparse_popcnt),
 		ELEMENT(   dense_popcnt),
@@ -206,20 +204,20 @@ int main(void)
 #undef ELEMENT
 	};
 
-	const uint NUM=0xDEADBEAF;
+	const uint32_t NUM = 0x10000000;//0xDEADBEAF;
 	printf("after iterating %u times,\n", NUM);
 
 	time_t start, stop;
-	for(uint i=0; i<sizeof(METHOD)/sizeof(METHOD[0]); ++i)
+	for(uint32_t i=0; i<sizeof(METHOD)/sizeof(METHOD[0]); ++i)
 	{
-		start=clock();
-		for(uint j=0; j<NUM; ++j)
+		start = clock();
+		for(uint32_t j = 0; j < NUM; ++j)
 		METHOD[i].pfunc(j);
 
-		stop=clock();
-		double elapsed_time=(double)(stop-start)/CLOCKS_PER_SEC;
+		stop = clock();
+		double elapsed_time = static_cast<double>(stop - start)/CLOCKS_PER_SEC/NUM;
 
-		printf("%u. method %15s uses %lfs\n", i, METHOD[i].name, elapsed_time);
+		printf("%u. method %15s uses %gs\n", i, METHOD[i].name, elapsed_time);
 	}
 	
 	return 0;
