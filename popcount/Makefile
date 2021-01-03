@@ -1,5 +1,5 @@
 DEBUG_FLAGS   = -Wall -g
-RELEASE_FLAGS = -Wall -O3 -s -DNDEBUG -DUSE_MACRO
+RELEASE_FLAGS = -Wall -O3 -lstd=c++11 -s -DNDEBUG -DUSE_MACRO
 
 CC    = gcc
 CXX   = g++

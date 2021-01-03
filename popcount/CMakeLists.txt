@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-project(popcount)
+project(popcount LANGUAGES CXX)
 
 set(CMAKE_CXX_FLAGS "-Wall -O3")
 
