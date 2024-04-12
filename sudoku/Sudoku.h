@@ -21,16 +21,16 @@
  * is a baseline solver for sudoku, but time will increase dramatically when size grows large, so
  * other feasible algorithms should be developed.
  */
-class alignas(4) Sudoku
+class Sudoku
 {
 private:
-	const int8_t rank;
-	const std::vector<int8_t> initialState;
-	const std::vector<int8_t> blockIndices;
+	const uint8_t rank;
+	const std::vector<uint8_t> initialState;
+	const std::vector<uint8_t> blockIndices;
 	
-	std::vector<int8_t> field;  // it will be updated step by step, until all the cells are filled.
+	std::vector<uint8_t> field;  // it will be updated step by step, until all the cells are filled.
 	std::vector<int32_t> map;  // 2D array to store position, map[blockIndex][value] = position.
-	std::map<int32_t, std::vector<int8_t>> blankCandidates;  // number candidates of blank cells.
+	std::map<int32_t, std::vector<uint8_t>> blankCandidates;  // number candidates of blank cells.
 	std::vector<std::vector<int32_t>> blankBlocks;  // blank positions of blocks
 	
 private:
@@ -41,7 +41,7 @@ private:
 	 * @param[in] length It's equal to rank * rank.
 	 * @return cell number array.
 	 */
-	static std::vector<int8_t> parse(const char* letters, int32_t length);
+	static std::vector<uint8_t> parse(const char* letters, int32_t length);
 	
 	/**
 	 * To parse the input text to cells' number.
@@ -49,14 +49,14 @@ private:
 	 *        can be used as empty character.
 	 * @param length It's equal to rank * rank.
 	 * @param placeholder The empty cell to be filled.
-	  * @return cell number array.
+	 * @return cell number array.
 	 */
-	static std::vector<int8_t> parse(const char* letters, int32_t length, char placeholder);
+	static std::vector<uint8_t> parse(const char* letters, int32_t length, char placeholder);
 	
 	/**
 	 * validate sudoku's initial state.
 	 */
-	void validate(const std::vector<int8_t>& state) const noexcept(false);
+	void validate(const std::vector<uint8_t>& state) const noexcept(false);
 	
 	/**
 	 * @return whether the block partition is valid or not.
@@ -73,29 +73,29 @@ private:
 	 * @param number range [1, rank]
 	 * @return valid range [0, rank * rank). If it is blank, return an invalid (nagative) value.
 	 */
-	int32_t getMapPosition(int8_t blockIndex, int8_t number) const;
-	void    setMapPosition(int8_t blockIndex, int8_t number, int32_t position);
+	int32_t getMapPosition(uint8_t blockIndex, uint8_t number) const;
+	void    setMapPosition(uint8_t blockIndex, uint8_t number, int32_t position);
 	
 	/**
 	 * @param position cell must be unfilled.
 	 * @param number range [1, rank]
 	 * @return true if successfully removed, false if it doesn't exist.
 	 */
-	bool removeCandidate(int32_t position, int8_t number);
+	bool removeCandidate(int32_t position, uint8_t number);
 	
 	/**
 	 * This is the simplest logic. If there is one cell that contains a single candidate, then that 
 	 * candidate is the solution for that cell. 
 	 * @return steps that can take, each step is (position, number) pair.
 	 */
-	std::vector<std::pair<int32_t, int8_t>> findNakedSingle() const;
+	std::vector<std::pair<int32_t, uint8_t>> findNakedSingle() const;
 	
 	/**
 	 * Hidden single strategy: If a group (row, column, or block) has one unique number for a cell,
 	 * namely, this number is not other cells's candidate, then it's time to fill it.
 	 * @return steps that can take, each step is (position, number) pair.
 	 */
-	std::vector<std::pair<int32_t, int8_t>> findHiddenSingle() const;
+	std::vector<std::pair<int32_t, uint8_t>> findHiddenSingle() const;
 	
 	/**
 	 * A naked pair is two cells of identical candidates found in a particular group.
@@ -129,18 +129,18 @@ private:
 	/**
 	 * Update candidates of this sudoku when @p position is filled with @p number.
 	 */
-	void updateNumber(int32_t position, int8_t number);
+	void updateNumber(int32_t position, uint8_t number);
 	
 	void backtrack(int32_t position);
 	
 	void printCurrentState() const;
 	
 public:
-	static constexpr int8_t RANK_MAX = 9 + 26;  ///< 1 ~ 9, a ~ z. 0 is reserved for blank area.
+	static constexpr uint8_t RANK_MAX = 9 + 26;  ///< 1 ~ 9, a ~ z. 0 is reserved for blank area.
 	static constexpr int32_t INVALID_POSTION = -1;
-	static constexpr int8_t  INVALID_NUMBER = 0;
+	static constexpr uint8_t  INVALID_NUMBER = 0;
 	
-	enum Group: int8_t
+	enum Group: uint8_t
 	{
 		NONE   = 0,
 		ROW    = 1,
@@ -156,14 +156,14 @@ public:
 	 *        they are treated like lower letters.
 	 * @return number.
 	 */
-	static int8_t number(char letter);
+	static uint8_t toNumber(char letter);
 	
 	/**
 	 * map number to letter.
 	 * @param number numbers between 0 (inclusive) and 36(exclusive).
 	 * @return lower letter.
 	 */
-	static char letter(int8_t number);
+	static char toLetter(uint8_t number);
 	
 public:
 	/**
@@ -171,23 +171,23 @@ public:
 	 * @param[in] state cell values in row-major, 0 for unfilled cell.
 	 * @param[in] block cell partion, values are from 1 to @p rank.
 	 */
-	Sudoku(int8_t rank, const char* state, const char* block, char placeholder = '0') noexcept(false);
+	Sudoku(uint8_t rank, const char* state, const char* block, char placeholder = '0') noexcept(false);
 	
-	int8_t getRank() const;
+	uint8_t getRank() const;
 	
 	/**
-	 * This is a simple assign @p number to the @p position operation, and you may need to call 
+	 * This is a simple assign @p number to the @p position operation. 
 	 */
-	void   setNumber(int32_t position, int8_t number);
-	int8_t getNumber(int32_t position) const;
+	void   setNumber(int32_t position, uint8_t number);
+	uint8_t getNumber(int32_t position) const;
 	
-	void   setNumber(int8_t row, int8_t column, int8_t number);
-	int8_t getNumber(int8_t row, int8_t column) const;
+	void   setNumber(uint8_t row, uint8_t column, uint8_t number);
+	uint8_t getNumber(uint8_t row, uint8_t column) const;
 	
 	/**
 	 * Check whether current state conflicts or not, namely at least two numbers are in one row,
 	 * column or block. Note that it is a global searching, it's inefficient than @fn 
-	 * bool isSafe(int8_t row, int8_t column, int8_t number) const.
+	 * bool isSafe(uint8_t row, uint8_t column, uint8_t number) const.
 	 * @ return true if no conflicts, otherwise false.
 	 */
 	bool isSafe() const;
@@ -201,13 +201,13 @@ public:
 	 * @param number range [1, rank]
 	 * @ return true if no conflicts, otherwise false.
 	 */
-	bool isSafe(int8_t row, int8_t column, int8_t number) const;
-	bool isSafe(int32_t position, int8_t number) const;
+	bool isSafe(uint8_t row, uint8_t column, uint8_t number) const;
+	bool isSafe(int32_t position, uint8_t number) const;
 	
 	/**
 	 * @return current blank cells' candidates.
 	 */
-	const std::map<int32_t, std::vector<int8_t>>& getBlankCandidates() const;
+	const std::map<int32_t, std::vector<uint8_t>>& getBlankCandidates() const;
 	
 	/**
 	 * update cells' candidate numbers.

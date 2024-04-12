@@ -1,8 +1,9 @@
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <ctime>
 #include <iostream>
-#include <cmath>
+#include <string>
 
 #include "Sudoku.h"
 
@@ -23,15 +24,15 @@
 
 #if COMMANDLINE_INPUT
 
-void usage()
+static void usage()
 {
 	const char* PROGRAM = "sudoku";
 	
-	std::cout << "usage: " << PROGRAM << " rank state [block] [placeholder]" << R"(
-  rank :       the sudoku's size, usually it's 9.
-  state:       initial state, row-major matrix, ranges from 1 to rank, unfilled cell will be 0 if no placeholder is set.
-  block:       sudoku's block partition, row-major matrix, ranges from 1 to rank, optional for regular sudoku.
-  placeholder: unfilled cell's character.
+	std::cout << "Usage: " << PROGRAM << " rank state [block] [placeholder]" << R"(
+  rank       : The sudoku's size, usually it's 9.
+  state      : Initial state, row-major matrix, ranges from 1 to rank, unfilled cell will be 0 if no placeholder is set.
+  block      : Sudoku's block partition, row-major matrix, ranges from 1 to rank. It's optional for regular 3x3 sudoku.
+  placeholder: Unfilled cell's character like *, space, or 0. It's optional for 0 character.
 )";
 }
 
@@ -41,15 +42,13 @@ void usage()
  *
  * @see https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_(base_2)
  */
-static int32_t isqrt(int32_t n)
+static constexpr uint32_t sqrt_i(uint32_t n)
 {
-	assert(n >= 0);
-	
-	int32_t res = 0;
-	int32_t bit = 1 << 30;
+	uint32_t res = 0U;
+	uint32_t bit = 1U << 30;
 
 	// "bit" starts at the highest power of four <= the argument.
-	while (bit > n)
+	while(bit > n)
 		bit >>= 2;
 		
 	while(bit != 0)
@@ -63,6 +62,7 @@ static int32_t isqrt(int32_t n)
 			res >>= 1;
 		bit >>= 2;
 	}
+
 	return res;
 }
 
@@ -74,17 +74,17 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	int8_t rank = static_cast<int8_t>(std::stoi(argv[1]));
-	if(rank <= 1)
+	int32_t rank = std::stoi(argv[1]);
+	if(rank <= 1 || rank > Sudoku::RANK_MAX)
 	{
 		std::cerr << "invalid rank size: " << rank << '\n';
 		return -1;
 	}
 	
 	const char* state = argv[2];
-	int32_t stateLength = std::strlen(state);
+	size_t stateLength = std::strlen(state);
 	const int32_t rankSquared = rank * rank;
-	if(stateLength < rankSquared)
+	if(stateLength != rankSquared)
 	{
 		std::cerr << "invalid state length: " << stateLength << ", needs " << rankSquared << '\n';
 		return -2;
@@ -96,8 +96,8 @@ int main(int argc, char* argv[])
 	if(argc > 4)
 	{
 		block = argv[3];
-		int32_t blockLength = std::strlen(block);
-		if(blockLength < rankSquared)
+		size_t blockLength = std::strlen(block);
+		if(blockLength != rankSquared)
 		{
 			std::cerr << "invalid block length: " << blockLength << ", needs " << rankSquared << '\n';
 			return -2;
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		int32_t blockSize = isqrt(rank);
+		int32_t blockSize = sqrt_i(rank);
 		if(blockSize * blockSize != rank)
 		{
 			std::cout << "not a regular sudoku, needs a block partition table" << '\n';
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 			int32_t row = position / rank;
 			int32_t column = position % rank;
 			int32_t index = 1 + row / blockSize * blockSize + column / blockSize;
-			blockPartition[position] = Sudoku::letter(index);
+			blockPartition[position] = Sudoku::toLetter(index);
 		}
 		block = blockPartition.data();
 	}
@@ -128,42 +128,41 @@ int main(int argc, char* argv[])
 int main()
 {
 
-	constexpr int8_t rank = 9;
+	constexpr uint8_t rank = 9;
 	// 9 digits a row group, I put 9 row groups on one line to make it more compact.
 	const char* state =
-/*
-		"005004000" "000060090" "300000007" "000040000" "008000400" "541000009" "200000003" "007400000" "000003000";
-		"927000100" "000090003" "060800070" "604901000" "103020805" "000503906" "080006090" "400070000" "009000627";
-*/
+//		"005004000" "000060090" "300000007" "000040000" "008000400" "541000009" "200000003" "007400000" "000003000";
+//		"927000100" "000090003" "060800070" "604901000" "103020805" "000503906" "080006090" "400070000" "009000627";
+
 		// http://www.sudokuessentials.com/x-wing.html
 		// http://www.sudokuessentials.com/support-files/sudoku-very-hard-1.pdf
 		"030480609" "000027000" "800300000" "019000000" "780002093" "000004870" "000005006" "000130000" "902048010";
-/*
+
 		// http://www.sudokuessentials.com/support-files/sudoku-very-hard-5.pdf
-		"050006007" "004000005" "000490610" "007004001" "082000760" "500800900" "096038000" "300000100" "700500030";
+//		"050006007" "004000005" "000490610" "007004001" "082000760" "500800900" "096038000" "300000100" "700500030";
 
 		// http://www.sudokusnake.com/finnedxwings.php
-		"506080007" "004500860" "180006040" "050800900" "200000008" "008002070" "070200056" "062005300" "905630700";
+//		"506080007" "004500860" "180006040" "050800900" "200000008" "008002070" "070200056" "062005300" "905630700";
 
 		// A Sudoku with 17 clues.
-		"000000010" "000002003" "000400000" "000000500" "401600000" "007100000" "050000200" "000080040" "030910000";
+//		"000000010" "000002003" "000400000" "000000500" "401600000" "007100000" "050000200" "000080040" "030910000";
 	
 		// A Sudoku with 17 clues and diagonal symmetry
-		"000000001" "000000023" "004005000" "000100000" "000030600" "007000580" "000067000" "010004000" "520000000";
+//		"000000001" "000000023" "004005000" "000100000" "000030600" "007000580" "000067000" "010004000" "520000000";
 		
 		// A Sudoku with 18 clues and orthogonal symmetry
-		"000000000" "090010030" "006020700" "000304000" "210000098" "000000000" "002506400" "080000010" "000000000";
+//		"000000000" "090010030" "006020700" "000304000" "210000098" "000000000" "002506400" "080000010" "000000000";
 
 		// https://en.wikipedia.org/wiki/Mathematics_of_Sudoku
 		// A 24-clue automorphic Sudoku with translational symmetry.
-		"100200300" "200300400" "300400500" "400500600" "000000000" "003004005" "004005006" "005006007" "006007008";
-*/
+//		"100200300" "200300400" "300400500" "400500600" "000000000" "003004005" "004005006" "005006007" "006007008";
+
 	const char* block = 
 		"111222333" "111222333" "111222333" "444555666" "444555666" "444555666" "777888999" "777888999" "777888999";
 
 /*
 	// https://www.wechall.net/challenge/sudoku1/index.php
-	constexpr int8_t rank = 13;  // 123456789abcd
+	constexpr uint8_t rank = 13;  // 123456789abcd
 	const char* state = 
 		"0a00d30070090"
 		"4000000c07b00"
@@ -194,7 +193,7 @@ int main()
 		"aaabbbcccdd99"
 		"aaabbbccccddd";
 */
-	char placeholder = '0';
+	constexpr char placeholder = '0';
 
 #endif
 
